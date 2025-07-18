@@ -85,12 +85,12 @@
     const webhookURL = 'https://hook.eu2.make.com/qqgf8srez9urb5j6cmx1qxn41v1st7tg';
 
     const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('userId');
+    const userid = urlParams.get('userid'); // 全て小文字に変更
 
     let selectedElement = null;
     let selectedData = null;
 
-    fetch(webhookURL + '?userId=' + encodeURIComponent(userId))
+    fetch(webhookURL + '?userid=' + encodeURIComponent(userid)) // パラメータ名も小文字に統一
       .then(response => response.json())
       .then(data => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -143,7 +143,7 @@
             selectedElement = menuEl;
 
             selectedData = {
-              userId: userId,
+              userid: userid, // ここも小文字
               メニュー名: title,
               金額: price,
               確定メニュー: "確定メニュー"
