@@ -70,16 +70,24 @@
     #submit-btn:hover:not(:disabled) {
       background-color: #0056b3;
     }
+    #userid-display {
+      text-align: center;
+      margin-bottom: 16px;
+      font-weight: bold;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <h2>メニューを選択してください</h2>
+  <div id="userid-display"></div>
   <div id="menu-container">読み込み中...</div>
   <button id="submit-btn" disabled>選択完了</button>
 
   <script>
     const container = document.getElementById('menu-container');
     const submitBtn = document.getElementById('submit-btn');
+    const userIdDisplay = document.getElementById('userid-display');
 
     // Make.comのWebhook URLに差し替えてください
     const webhookURL = 'https://hook.eu2.make.com/qqgf8srez9urb5j6cmx1qxn41v1st7tg';
@@ -87,10 +95,18 @@
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
 
+    // userIdを画面に表示
+    if (userId) {
+      userIdDisplay.textContent = `UserID: ${userId}`;
+    } else {
+      userIdDisplay.textContent = 'UserIDが指定されていません。';
+    }
+
     let selectedElement = null;
     let selectedData = null;
 
-    fetch(`${webhookURL}?userId=${encodeURIComponent(userId)}`)
+    // fetchのURL部分は文字列で囲いテンプレートリテラルでなく、連結する形に修正
+    fetch(webhookURL + '?userId=' + encodeURIComponent(userId))
       .then(response => response.json())
       .then(data => {
         if (!Array.isArray(data) || data.length === 0) {
@@ -143,6 +159,7 @@
             selectedElement = menuEl;
 
             selectedData = {
+              userId: userId,
               メニュー名: title,
               金額: price,
               確定メニュー: "確定メニュー"
