@@ -232,8 +232,8 @@
           const clickedDate = new Date(td.getAttribute("data-datetime"));
           selectedDateTime = clickedDate;
 
-          // 表示更新
-          selectedInfo.textContent = `選択中の予約日時: ${formatDateDisplay(clickedDate)} ～ ${formatDateDisplay(new Date(clickedDate.getTime() + duration * 60000))}`;
+          // 表示更新（終了日時は消す）
+          selectedInfo.textContent = `選択中の予約日時: ${formatDateDisplay(clickedDate)}`;
           sendButton.disabled = false;
         });
       });
