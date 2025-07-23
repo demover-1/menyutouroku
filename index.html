@@ -3,197 +3,304 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>メニュー選択</title>
+  <title>予約スロット</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet" />
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Noto Sans JP', sans-serif;
       padding: 20px;
-      background-color: #f9f9f9;
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+      color: #222;
     }
-    h2 {
+
+    h1 {
       text-align: center;
+      margin-bottom: 24px;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 24px;
     }
-    .block-title {
-      margin-top: 24px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #444;
-      border-left: 4px solid #4CAF50;
-      padding-left: 10px;
-      margin-bottom: 10px;
+
+    #slots-wrapper {
+      overflow-x: auto;
+      max-width: 100%;
     }
-    .menu-item {
-      border-radius: 8px;
-      background-color: #f0f0f0;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.3s ease;
+
+    #slots {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+      padding: 16px;
+      min-width: 700px;
+      display: inline-block;
     }
-    .menu-item:hover {
-      background-color: #e0e0e0;
-    }
-    .menu-item.selected {
-      background-color: #4caf50;
-      color: white;
-    }
-    .menu-title {
-      font-size: 16px;
-      font-weight: bold;
-    }
-    .menu-desc {
-      font-size: 13px;
-      margin-top: 4px;
-      color: #333;
-      padding-left: 8px;
-    }
-    #submit-btn {
-      display: block;
+
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
       width: 100%;
-      max-width: 600px;
-      margin: 20px auto 0 auto;
-      padding: 14px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 14px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    thead th {
+      background-color: #0c4a6e;
+      color: white;
+      font-weight: 700;
+    }
+
+    tbody tr:nth-child(odd) td {
+      background-color: #f9fbfd;
+    }
+
+    tbody tr:hover td:not(.unavailable) {
+      background-color: #e0f2fe;
+      cursor: pointer;
+    }
+
+    th:first-child {
+      background-color: #94a3b8;
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    td.available {
+      color: #166534;
+      background-color: #dcfce7;
+      font-weight: 700;
+      cursor: pointer;
+      border: 2px solid #22c55e;
+      border-radius: 6px;
+      box-shadow: inset 0 0 8px #bbf7d0;
+    }
+
+    td.available:hover {
+      background-color: #a7f3d0;
+    }
+
+    td.unavailable {
+      color: #64748b;
+      background-color: #e2e8f0;
+      font-weight: 600;
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+    }
+
+    #slots-wrapper::-webkit-scrollbar {
+      height: 10px;
+    }
+
+    #slots-wrapper::-webkit-scrollbar-thumb {
+      background: #0c4a6e;
+      border-radius: 10px;
+    }
+
+    #slots-wrapper::-webkit-scrollbar-track {
+      background: #dbeafe;
+    }
+
+    /* 新しく追加した部分 */
+    #selected-info {
+      margin-top: 20px;
+      font-weight: 700;
       font-size: 16px;
-      background-color: #007bff;
+      text-align: center;
+      color: #166534;
+    }
+
+    #send-button {
+      display: block;
+      margin: 16px auto 0 auto;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #22c55e;
       color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.3s ease;
+      disabled: true;
     }
-    #submit-btn:disabled {
-      background-color: #cccccc;
+
+    #send-button:disabled {
+      background-color: #a7f3d0;
       cursor: not-allowed;
     }
-    #submit-btn:hover:not(:disabled) {
-      background-color: #0056b3;
+
+    #send-button:hover:not(:disabled) {
+      background-color: #16a34a;
     }
   </style>
 </head>
 <body>
-  <h2>メニューを選択してください</h2>
-  <div id="menu-container">読み込み中...</div>
-  <button id="submit-btn" disabled>選択完了</button>
+  <h1>予約スロット（JST表示）</h1>
+
+  <div id="slots-wrapper">
+    <div id="slots">読み込み中...</div>
+  </div>
+
+  <!-- 選択中の日時表示 -->
+  <div id="selected-info">予約したい日時を選択してください。</div>
+  <!-- 送信ボタン -->
+  <button id="send-button" disabled>予約を送信する</button>
 
   <script>
-    const container = document.getElementById('menu-container');
-    const submitBtn = document.getElementById('submit-btn');
+    const webhookUrl = "https://hook.eu2.make.com/m8ax699q4dk75uo84j5nrtu3zfm1x1pj";
 
-    // Make.comのWebhook URLに差し替えてください
-    const webhookURL = 'https://hook.eu2.make.com/m8ax699q4dk75uo84j5nrtu3zfm1x1pj';
+    // URLパラメータからuseridとduration(施術時間)を取得
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get("userid");
+    const duration = parseInt(params.get("duration"), 10) || 30;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const userid = urlParams.get('userid'); // 全て小文字に変更
+    // 日付ISO形式に変換
+    function formatDateISO(date) {
+      return date.toISOString();
+    }
 
-    let selectedElement = null;
-    let selectedData = null;
+    // 表示用日時フォーマット
+    function formatDateDisplay(date) {
+      const pad = n => n.toString().padStart(2, '0');
+      return `${pad(date.getMonth() + 1)}月${pad(date.getDate())}日 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
 
-    fetch(webhookURL + '?userid=' + encodeURIComponent(userid)) // パラメータ名も小文字に統一
-      .then(response => response.json())
-      .then(data => {
-        if (!Array.isArray(data) || data.length === 0) {
-          container.innerHTML = 'メニュー情報が見つかりませんでした。';
-          submitBtn.disabled = true;
+    // 指定時間帯が予約済みか判定
+    function isReservedForDuration(startDate, reservedSlots, durationMinutes) {
+      const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+      return reservedSlots.some(slot => {
+        const slotStart = new Date(slot.start);
+        const slotEnd = new Date(slot.end);
+        return !(endDate <= slotStart || startDate >= slotEnd);
+      });
+    }
+
+    // 予約スロットのグリッドを表示
+    function renderGrid(reservedSlots) {
+      const container = document.getElementById("slots");
+      const today = new Date();
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        return d;
+      });
+
+      const times = [];
+      for (let h = 10; h <= 20; h++) {
+        times.push(`${('0' + h).slice(-2)}:00`);
+        times.push(`${('0' + h).slice(-2)}:30`);
+      }
+
+      let html = "<table><thead><tr><th></th>";
+      days.forEach(d => {
+        const dt = d.toLocaleDateString("ja-JP", { month: '2-digit', day: '2-digit', weekday: 'short' });
+        html += `<th>${dt}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      times.forEach(t => {
+        html += `<tr><th>${t}</th>`;
+        days.forEach(d => {
+          const [hh, mm] = t.split(":");
+          const dt = new Date(d);
+          dt.setHours(+hh, +mm, 0, 0);
+          const reserved = isReservedForDuration(dt, reservedSlots, duration);
+          const cls = reserved ? "unavailable" : "available";
+          const sym = reserved ? "×" : "○";
+          html += `<td class="${cls}"${cls === "available" ? ` data-datetime="${dt.toISOString()}"` : ''}>${sym}</td>`;
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody></table>";
+      container.innerHTML = html;
+
+      // 選択中の日時を管理
+      let selectedDateTime = null;
+      const selectedInfo = document.getElementById("selected-info");
+      const sendButton = document.getElementById("send-button");
+
+      // 予約スロット選択時の処理
+      document.querySelectorAll("td.available").forEach(td => {
+        td.addEventListener("click", () => {
+          const clickedDate = new Date(td.getAttribute("data-datetime"));
+          selectedDateTime = clickedDate;
+
+          // 表示更新
+          selectedInfo.textContent = `選択中の予約日時: ${formatDateDisplay(clickedDate)} ～ ${formatDateDisplay(new Date(clickedDate.getTime() + duration * 60000))}`;
+          sendButton.disabled = false;
+        });
+      });
+
+      // 送信ボタン押下時の処理
+      sendButton.addEventListener("click", async () => {
+        if (!userId) {
+          alert("ユーザーIDが見つかりません。URLにuseridパラメータが必要です。");
           return;
         }
 
-        container.innerHTML = '';
-
-        let lastBlock = '';
-
-        data.forEach(item => {
-          // item: ["ブロック名", "メニュー名", "説明", "価格", "施術時間"]
-          const block = item[0] || '';
-          const title = item[1] || '';
-          const desc = item[2] || '';
-          const price = item[3] || '';
-
-          // ブロック名をグループごとに表示
-          if (block !== lastBlock) {
-            const blockEl = document.createElement('div');
-            blockEl.className = 'block-title';
-            blockEl.textContent = block;
-            container.appendChild(blockEl);
-            lastBlock = block;
-          }
-
-          // メニューアイテム作成
-          const menuEl = document.createElement('div');
-          menuEl.className = 'menu-item';
-
-          const titleEl = document.createElement('div');
-          titleEl.className = 'menu-title';
-          titleEl.textContent = `${title}（¥${price}）`;
-
-          const descEl = document.createElement('div');
-          descEl.className = 'menu-desc';
-          descEl.textContent = desc;
-
-          menuEl.appendChild(titleEl);
-          menuEl.appendChild(descEl);
-
-          // クリックで選択切り替え
-          menuEl.addEventListener('click', () => {
-            if (selectedElement) {
-              selectedElement.classList.remove('selected');
-            }
-            menuEl.classList.add('selected');
-            selectedElement = menuEl;
-
-            selectedData = {
-              userid: userid, // ここも小文字
-              メニュー名: title,
-              金額: price,
-              確定メニュー: "確定メニュー"
-            };
-
-            // 送信ボタン有効化
-            submitBtn.disabled = false;
-          });
-
-          container.appendChild(menuEl);
-        });
-      })
-      .catch(error => {
-        console.error('メニュー取得エラー:', error);
-        container.innerHTML = 'メニューの取得に失敗しました。';
-        submitBtn.disabled = true;
-      });
-
-    // 送信ボタン押下時の処理
-    submitBtn.addEventListener('click', () => {
-      if (!selectedData) {
-        alert('メニューを選択してください。');
-        return;
-      }
-
-      fetch(webhookURL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(selectedData)
-      })
-      .then(res => {
-        if (res.ok) {
-          alert(`「${selectedData.メニュー名}」を送信しました。`);
-          // 送信後に選択解除してボタン無効化
-          if (selectedElement) {
-            selectedElement.classList.remove('selected');
-            selectedElement = null;
-          }
-          selectedData = null;
-          submitBtn.disabled = true;
-        } else {
-          alert('送信に失敗しました。');
+        if (!selectedDateTime) {
+          alert("予約日時を選択してください。");
+          return;
         }
-      })
-      .catch(() => {
-        alert('送信に失敗しました。');
+
+        const startDateTime = selectedDateTime;
+        const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+        const start = formatDateISO(startDateTime);
+        const end = formatDateISO(endDateTime);
+
+        try {
+          const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: userId,
+              message: "確定予約日",
+              start: start,
+              end: end
+            })
+          });
+          if (!res.ok) throw new Error("送信に失敗しました");
+
+          alert(`予約日時を送信しました！\n${formatDateDisplay(startDateTime)} ～ ${formatDateDisplay(endDateTime)}`);
+
+          // 送信後リセット
+          selectedDateTime = null;
+          selectedInfo.textContent = "予約したい日時を選択してください。";
+          sendButton.disabled = true;
+        } catch (err) {
+          alert(`エラーが発生しました: ${err.message}`);
+        }
       });
-    });
+    }
+
+    // ページロード時に一度だけfetch（userid,duration付き）
+    async function loadReservedSlotsWithParams() {
+      if (!userId) {
+        alert("URLにuseridパラメータがありません。");
+        return [];
+      }
+      try {
+        const res = await fetch(`${webhookUrl}?userid=${encodeURIComponent(userId)}&duration=${encodeURIComponent(duration)}`);
+        if (!res.ok) throw new Error("予約データ取得に失敗しました");
+        return await res.json();
+      } catch (err) {
+        alert(err.message);
+        return [];
+      }
+    }
+
+    loadReservedSlotsWithParams()
+      .then(renderGrid)
+      .catch(err => {
+        document.getElementById("slots").textContent = err.message;
+      });
   </script>
 </body>
 </html>
